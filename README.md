@@ -1,93 +1,126 @@
 # Music Pattern Analysis
 
-Análisis avanzado de patrones musicales usando el Spotify Tracks Dataset.
+Análisis de patrones musicales sobre el [Spotify Tracks Dataset](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset) de Kaggle (114.000 canciones y 114 géneros), hecho con scripts de Python reproducibles.
+
+El proyecto responde a tres preguntas:
+
+1. ¿Cómo se diferencian los géneros según sus características de audio?
+2. ¿Se pueden agrupar las canciones por patrones musicales, más allá del género?
+3. ¿Cuánto explica el audio de la popularidad de una canción?
+
+## Hallazgos principales
+
+- **Calidad de datos**: de 114.000 filas se eliminan 450 duplicados exactos, 1 fila con nulos y 163 con `tempo = 0` o `time_signature = 0` (fallos de análisis de audio). Quedan 113.386 filas, que corresponden a 89.578 canciones únicas: una misma canción aparece en varios géneros.
+- **Variables correlacionadas**: `energy`, `loudness` y `acousticness` forman un bloque casi redundante (`energy`-`loudness` +0,75, `energy`-`acousticness` -0,71).
+- **Géneros**: `latino`, `reggaeton` y `reggae` tienen perfiles casi idénticos, y `sleep` es el género más extremo frente a la música festiva. `songwriter` y `singer-songwriter` contienen exactamente las mismas 1.000 canciones.
+- **Clustering**: K-Means con k=8 da grupos interpretables (acústico suave, latino bailable, rock/metal intenso, electrónica instrumental, comedia/habla, ambient y clásica, rítmico con voz hablada y directo/brasileño). Los silhouette son bajos (0,14-0,24): los estilos forman un continuo y los clusters se solapan.
+- **Popularidad**: el audio explica como mucho ~20% de la varianza (Random Forest, R² = 0,19 en validación cruzada, error medio de 12,7 puntos). La regresión lineal solo llega a 0,07, así que hay relaciones no lineales. `instrumentalness` es la variable más influyente.
+
+## Imágenes clave
+
+![Distribuciones de las características de audio](reports/figures/distribuciones.png)
+
+![Correlación entre características](reports/figures/correlacion.png)
+
+![Perfil de audio por género](reports/figures/generos_heatmap.png)
+
+![Clusters de canciones](reports/figures/clusters_pca.png)
 
 ## Estructura del proyecto
 
-- `data/raw`: datos originales sin modificar
-- `data/processed`: datos limpios y transformados
-- `notebooks`: análisis exploratorio y modelos
-- `src`: código reutilizable
-- `reports`: resultados y figuras
+```
+.
+├── data/
+│   ├── raw/          # dataset original (no se sube al repo)
+│   └── processed/    # datasets limpios y clusters (no se suben al repo)
+├── src/              # scripts de análisis
+├── reports/figures/  # gráficos generados
+├── requirements.txt
+└── README.md
+```
 
-## Objetivos
+Scripts de `src/`:
 
-- Análisis exploratorio (EDA) de las características de audio
-- Limpieza y preparación de datos
-- Clustering de canciones por patrones musicales
-- Modelos predictivos de popularidad
+| Bloque | Scripts |
+|---|---|
+| EDA | `eda_overview.py`, `eda_calidad.py`, `eda_estadisticos.py`, `eda_distribuciones.py`, `eda_correlacion.py` |
+| Limpieza | `limpieza_anomalias.py`, `limpieza.py` |
+| Géneros | `generos_perfil.py`, `generos_heatmap.py` |
+| Clustering | `preparacion.py`, `clustering_pca.py`, `clustering_k.py`, `clustering_perfil.py` |
+| Popularidad | `popularidad_base.py`, `popularidad_arboles.py` |
 
-## Dataset
+## Cómo reproducirlo
 
-Se usa el [Spotify Tracks Dataset](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset) de Kaggle (~114.000 canciones con características de audio). Los datos no se incluyen en el repositorio.
+Todos los comandos se ejecutan desde la raíz del proyecto.
 
-### Cómo descargarlo
+**1. Entorno**
 
-1. Crear un token en Kaggle (Settings → API → Create New Token) y guardarlo en `~/.kaggle/`
-2. Instalar dependencias: `pip install -r requirements.txt`
-3. Descargar el dataset:
+```bash
+python -m venv venv
+source venv/Scripts/activate   # Git Bash en Windows (en Linux/macOS: source venv/bin/activate)
+pip install -r requirements.txt
+```
+
+**2. Dataset**
+
+Crea un token en Kaggle (Settings → API → Create New Token) y guárdalo en `~/.kaggle/`. Después:
 
 ```bash
 kaggle datasets download -d maharshipandya/-spotify-tracks-dataset -p data/raw --unzip
 ```
 
-## Limpieza de datos
-
-Para generar los datasets procesados en `data/processed/`:
+**3. Limpieza** (genera `data/processed/tracks_genres.csv` y `tracks_unique.csv`)
 
 ```bash
 python src/limpieza.py
 ```
 
-Se crean dos archivos (no se suben al repo):
+**4. Análisis, en este orden**
 
-- `tracks_genres.csv`: una fila por canción y género (113.386 filas). Para análisis por género.
-- `tracks_unique.csv`: una fila por `track_id` (89.578 filas), con todos sus géneros en `track_genres`. Para clustering y modelos.
+```bash
+# EDA
+python src/eda_overview.py
+python src/eda_calidad.py
+python src/eda_estadisticos.py
+python src/eda_distribuciones.py
+python src/eda_correlacion.py
 
-Criterios aplicados: se eliminan duplicados exactos, nulos y filas con `tempo = 0` o `time_signature = 0` (fallos de análisis de audio). Se añade la columna `sin_popularidad` (`popularity == 0`) para poder filtrarlas en los modelos.
+# Géneros
+python src/generos_perfil.py
+python src/generos_heatmap.py
 
-## Análisis por género
+# Clustering
+python src/clustering_pca.py
+python src/clustering_k.py
+python src/clustering_perfil.py
 
-Scripts: `src/generos_perfil.py` (perfil medio y rankings) y `src/generos_heatmap.py` (heatmap agrupado y pares de géneros más parecidos).
+# Popularidad
+python src/popularidad_base.py
+python src/popularidad_arboles.py
+```
 
-Notas:
-- El dataset está balanceado por diseño (862-1.000 canciones por género), por lo que no refleja la proporción real de cada género en Spotify.
-- `songwriter` y `singer-songwriter` contienen exactamente las mismas 1.000 canciones; se excluye `songwriter` del análisis de similitud.
-- Algunas etiquetas (`happy`, `chill`, `sad`, `sleep`) son más de ambiente que de género musical.
+`src/limpieza_anomalias.py` es opcional: solo cuenta los valores anómalos que justifican los criterios de limpieza.
 
-## Clustering de canciones
+## Decisiones técnicas
 
-Scripts (ejecutar en este orden desde la raíz):
+- **Dos datasets procesados**: `tracks_genres.csv` (una fila por canción y género) para el análisis por género, y `tracks_unique.csv` (una fila por `track_id`) para clustering y modelos, para no repetir canciones.
+- **`popularity = 0` se mantiene** (14% de las filas) con la columna `sin_popularidad`, y se excluye solo en los modelos de popularidad, porque probablemente son canciones sin datos.
+- **Preparación para clustering**: `log1p` en `speechiness`, `liveness`, `duration_ms` e `instrumentalness`, y `StandardScaler`. `RobustScaler` se descartó porque dejaba `instrumentalness` y `speechiness` dominando el 70% de la varianza del PCA.
+- **k=8**: máximo local de silhouette (0,164) entre los k útiles. k=2 puntúa más alto, pero solo separa vocal de instrumental.
+- **Correlaciones con Spearman**, por las distribuciones tan sesgadas.
+- **Modelos de popularidad**: división 80/20 con semilla fija y validación cruzada de 5 particiones. Se compara contra una media constante como referencia.
 
-- `src/preparacion.py`: transformación `log1p` de variables sesgadas y `StandardScaler`
-- `src/clustering_pca.py`: PCA para entender el peso de cada variable
-- `src/clustering_k.py`: método del codo y silhouette
-- `src/clustering_perfil.py`: K-Means con k=8 y perfil de cada cluster
-
-Decisiones:
-
-- `RobustScaler` se descartó: dejaba `instrumentalness` y `speechiness` dominando el PCA (70% de la varianza). Con `StandardScaler` ningún componente está dominado por una sola variable.
-- k=8 por ser el máximo local de silhouette (0,164) entre los k útiles. Los silhouette son bajos (0,14-0,24): los estilos musicales forman un continuo y los clusters se solapan.
-
-Clusters encontrados: acústico suave, latino bailable, rock/metal intenso, electrónica instrumental, comedia/habla, ambient y clásica, rítmico con voz hablada y directo/brasileño.
-
-La popularidad apenas varía entre clusters (24-36): el audio por sí solo explica poco.
-
-## Predicción de popularidad
-
-Scripts: `src/popularidad_base.py` (media y regresión lineal) y `src/popularidad_arboles.py` (Random Forest y Gradient Boosting).
-
-Se excluyen las canciones con `popularity = 0` (probablemente sin datos) y se usa una fila por canción para evitar que la misma canción caiga en entrenamiento y test.
-
-| Modelo | R² (CV 5 particiones) | MAE |
+| Modelo | R² (CV) | MAE |
 |---|---|---|
 | Media constante | 0,000 | 15,05 |
 | Regresión lineal | 0,073 | 14,26 |
 | Gradient Boosting | 0,175 | 13,12 |
 | Random Forest | 0,194 | 12,74 |
 
-Conclusiones:
+## Limitaciones
 
-- Las características de audio explican ~20% de la varianza de la popularidad como máximo: hay relaciones no lineales, pero el audio por sí solo no basta.
-- Variables más importantes: `instrumentalness`, `acousticness`, `valence`, `loudness` y `energy`. `key`, `mode` y `time_signature` apenas influyen.
-- La importancia de variables no implica causalidad.
+- El dataset está balanceado por diseño (862-1.000 canciones por género), así que no refleja la proporción real de cada género en Spotify.
+- Algunas etiquetas (`happy`, `chill`, `sad`, `sleep`) son más de ambiente que de género musical.
+- La popularidad es una instantánea de un momento concreto, y el audio no incluye artista, fecha ni playlists, factores clave en popularidad.
+- La importancia de variables describe lo que usa el modelo, no relaciones causales.
+- Los clusters se solapan: son una simplificación útil, no categorías cerradas.
