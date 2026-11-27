@@ -54,3 +54,21 @@ Notas:
 - El dataset está balanceado por diseño (862-1.000 canciones por género), por lo que no refleja la proporción real de cada género en Spotify.
 - `songwriter` y `singer-songwriter` contienen exactamente las mismas 1.000 canciones; se excluye `songwriter` del análisis de similitud.
 - Algunas etiquetas (`happy`, `chill`, `sad`, `sleep`) son más de ambiente que de género musical.
+
+## Clustering de canciones
+
+Scripts (ejecutar en este orden desde la raíz):
+
+- `src/preparacion.py`: transformación `log1p` de variables sesgadas y `StandardScaler`
+- `src/clustering_pca.py`: PCA para entender el peso de cada variable
+- `src/clustering_k.py`: método del codo y silhouette
+- `src/clustering_perfil.py`: K-Means con k=8 y perfil de cada cluster
+
+Decisiones:
+
+- `RobustScaler` se descartó: dejaba `instrumentalness` y `speechiness` dominando el PCA (70% de la varianza). Con `StandardScaler` ningún componente está dominado por una sola variable.
+- k=8 por ser el máximo local de silhouette (0,164) entre los k útiles. Los silhouette son bajos (0,14-0,24): los estilos musicales forman un continuo y los clusters se solapan.
+
+Clusters encontrados: acústico suave, latino bailable, rock/metal intenso, electrónica instrumental, comedia/habla, ambient y clásica, rítmico con voz hablada y directo/brasileño.
+
+La popularidad apenas varía entre clusters (24-36): el audio por sí solo explica poco.
