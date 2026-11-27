@@ -30,3 +30,18 @@ Se usa el [Spotify Tracks Dataset](https://www.kaggle.com/datasets/maharshipandy
 ```bash
 kaggle datasets download -d maharshipandya/-spotify-tracks-dataset -p data/raw --unzip
 ```
+
+## Limpieza de datos
+
+Para generar los datasets procesados en `data/processed/`:
+
+```bash
+python src/limpieza.py
+```
+
+Se crean dos archivos (no se suben al repo):
+
+- `tracks_genres.csv`: una fila por canción y género (113.386 filas). Para análisis por género.
+- `tracks_unique.csv`: una fila por `track_id` (89.578 filas), con todos sus géneros en `track_genres`. Para clustering y modelos.
+
+Criterios aplicados: se eliminan duplicados exactos, nulos y filas con `tempo = 0` o `time_signature = 0` (fallos de análisis de audio). Se añade la columna `sin_popularidad` (`popularity == 0`) para poder filtrarlas en los modelos.
