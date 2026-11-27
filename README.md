@@ -72,3 +72,22 @@ Decisiones:
 Clusters encontrados: acústico suave, latino bailable, rock/metal intenso, electrónica instrumental, comedia/habla, ambient y clásica, rítmico con voz hablada y directo/brasileño.
 
 La popularidad apenas varía entre clusters (24-36): el audio por sí solo explica poco.
+
+## Predicción de popularidad
+
+Scripts: `src/popularidad_base.py` (media y regresión lineal) y `src/popularidad_arboles.py` (Random Forest y Gradient Boosting).
+
+Se excluyen las canciones con `popularity = 0` (probablemente sin datos) y se usa una fila por canción para evitar que la misma canción caiga en entrenamiento y test.
+
+| Modelo | R² (CV 5 particiones) | MAE |
+|---|---|---|
+| Media constante | 0,000 | 15,05 |
+| Regresión lineal | 0,073 | 14,26 |
+| Gradient Boosting | 0,175 | 13,12 |
+| Random Forest | 0,194 | 12,74 |
+
+Conclusiones:
+
+- Las características de audio explican ~20% de la varianza de la popularidad como máximo: hay relaciones no lineales, pero el audio por sí solo no basta.
+- Variables más importantes: `instrumentalness`, `acousticness`, `valence`, `loudness` y `energy`. `key`, `mode` y `time_signature` apenas influyen.
+- La importancia de variables no implica causalidad.
